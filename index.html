@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shelf Life Removal Norms</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Shelf Life Removal Norms</h1>
+  </header>
+  <div class="calc">
+  <h2>Calculator</h2>
+  <label>Shelf Life</label>
+  <select id="shelf"></select>
+  <label>Expiry Date</label>
+  <input type="date" id="expiry">
+  <button id="calcBtn">Calculate</button>
+  <div id="result"></div>
+</div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Details</th>
+          <th>Removal Norms for DS</th>
+          <th>Intimation to Sr Associate</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+
+  <script>
+      document.addEventListener("DOMContentLoaded", function () {
+  // [label, removal text, removal n, removal unit, intimation text, intimation n, intimation unit]
+  const data = [
+    ["Up to 7 Days", "2 Days Before", 2, "d", "-", 0, ""],
+    ["8 to 15 Days Shelf Life", "2 Days Before", 2, "d", "-", 0, ""],
+    ["16 to 30 Days Shelf Life", "5 Days Before", 5, "d", "7 Days Before", 7, "d"],
+    ["31 to 60 Days Shelf Life", "10 Days Before", 10, "d", "20 Days Before", 20, "d"],
+    ["3 Months Shelf Life", "10 Days Before", 10, "d", "25 Days Before", 25, "d"],
+    ["4 Months Shelf Life", "15 Days Before", 15, "d", "30 Days Before", 30, "d"],
+    ["6 Months Shelf Life", "1 Month Before", 1, "m", "45 Days Before", 45, "d"],
+    ["9 Months Shelf Life", "1 Month Before", 1, "m", "60 Days Before", 60, "d"],
+    ["12 Months Shelf Life", "1 Month Before", 1, "m", "60 Days Before", 60, "d"],
+    ["24 Months Shelf Life", "2 Months Before", 2, "m", "3 Months Before", 3, "m"],
+    ["36 Months Shelf Life", "3 Months Before", 3, "m", "180 Days Before", 180, "d"]
+  ];
+
+  const tbody = document.getElementById("tbody");
+  const search = document.getElementById("search");
+  const shelf = document.getElementById("shelf");
+  const expiry = document.getElementById("expiry");
+  const calcBtn = document.getElementById("calcBtn");
+  const result = document.getElementById("result");
+
+  function render(list) {
+    tbody.innerHTML = list
+      .map(r => `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[4]}</td></tr>`)
+      .join("");
+  }
+
+  if (search) {
+    search.addEventListener("input", function () {
+      const q = search.value.toLowerCase();
+      render(data.filter(r => r[0].toLowerCase().includes(q)));
+    });
+  }
+
+  shelf.innerHTML = data
+    .map((r, i) => `<option value="${i}">${r[0]}</option>`)
+    .join("");
+
+  function subtract(date, n, unit) {
+    const d = new Date(date);
+    if (unit === "m") d.setMonth(d.getMonth() - n);
+    else d.setDate(d.getDate() - n);
+    return d;
+  }
+
+  function fmt(d) {
+    return d.toLocaleDateString("en-GB", {
+      day: "2-digit", month: "short", year: "numeric"
+    });
+  }
+
+  function daysBetween(a, b) {
+    return Math.round((b - a) / 86400000);
+  }
+
+  calcBtn.addEventListener("click", function () {
+    if (!expiry.value) {
+      result.innerHTML = '<div class="res-box red">Please select expiry date.</div>';
+      return;
+    }
+    const r = data[shelf.value];
+    const exp = new Date(expiry.value + "T00:00:00");
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const removeOn = subtract(exp, r[2], r[3]);
+    let html = "";
+
+    const left = daysBetween(today, exp);
+    html += `<div class="res-box">Days left to expiry<b>${left} days</b></div>`;
+
+    html += `<div class="res-box red">Remove from shelf (DS) on<b>${fmt(removeOn)}</b>${
+      daysBetween(today, removeOn)
+    } days from today</div>`;
+
+    if (r[5] > 0) {
+      const intimateOn = subtract(exp, r[5], r[6]);
+      html += `<div class="res-box">Intimate Sr Associate on<b>${fmt(intimateOn)}</b>${
+        daysBetween(today, intimateOn)
+      } days from today</div>`;
+    } else {
+      html += '<div class="res-box">No intimation needed for this shelf life.</div>';
+    }
+
+    if (left < 0) {
+      html = '<div class="res-box red"><b>Already expired!</b></div>' + html;
+    }
+    result.innerHTML = html;
+  });
+
+  render(data);
+});
+  </script>
+</body>
+</html>
